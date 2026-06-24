@@ -18,6 +18,8 @@ class ClusterCreate(BaseModel):
     name: str = Field(min_length=1, max_length=64, pattern=r"^[a-z0-9-]+$")
     display_name: str = Field(min_length=1, max_length=200)
     server_url: HttpUrl
+    prometheus_url: HttpUrl | None = None
+    argocd_url: HttpUrl | None = None
     context: str | None = None
     credential: ClusterCredential
 
@@ -35,6 +37,8 @@ class ClusterResponse(BaseModel):
     name: str
     display_name: str
     server_url: str
+    prometheus_url: str | None
+    argocd_url: str | None
     status: str
     last_connected_at: datetime | None
     created_at: datetime

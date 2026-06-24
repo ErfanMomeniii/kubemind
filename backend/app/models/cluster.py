@@ -24,6 +24,8 @@ class Cluster(UUIDPk, Timestamps, Base):
     display_name: Mapped[str] = mapped_column(Text, nullable=False)
     context: Mapped[str | None] = mapped_column(String(255), nullable=True)
     server_url: Mapped[str] = mapped_column(Text, nullable=False)
+    prometheus_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    argocd_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
     last_connected_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True

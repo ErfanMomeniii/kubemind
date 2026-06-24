@@ -65,6 +65,8 @@ async def create_cluster(
         display_name=input.display_name,
         context=input.context,
         server_url=str(input.server_url),
+        prometheus_url=str(input.prometheus_url) if input.prometheus_url else None,
+        argocd_url=str(input.argocd_url) if input.argocd_url else None,
         status="active",
     )
     session.add(cluster)

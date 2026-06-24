@@ -1,27 +1,37 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { authHeaders } from "@/lib/api";
 import { clusterListSchema } from "@/lib/schemas";
+import { useDashboardQuery } from "@/lib/use-dashboard";
+import { HealthBanner } from "@/components/health-banner";
+import { DashboardDetails } from "@/components/dashboard-details";
 import { useAuthStore } from "@/stores/auth-store";
 
-async function fetchClusters(): Promise<{ items: unknown[]; hasMore: boolean }> {
+async function fetchClusters() {
   const resp = await fetch("/api/v1/clusters", { headers: { ...authHeaders() } });
-  if (!resp.ok) throw new Error(`failed: ${resp.status}`);
-  const data = clusterListSchema.parse(await resp.json());
-  return { items: data.items, hasMore: data.hasMore };
+  if (!resp.ok) throw new Error(`clusters fetch failed: ${resp.status}`);
+  return clusterListSchema.parse(await resp.json());
 }
 
 export function DashboardContent() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const { data, isLoading, error } = useQuery({
+  const { data: clusterData } = useQuery({
     queryKey: ["clusters"],
     queryFn: fetchClusters,
     enabled: !!user,
   });
+  const [selectedId, setSelectedId] = useState<string | null>(
+    clusterData?.items[0]?.id ?? null,
+  );
+  const { data, isLoading, error } = useDashboardQuery(selectedId);
 
   if (!user) return null;
+
+  const clusters = clusterData?.items ?? [];
+  const activeId = selectedId ?? clusters[0]?.id ?? null;
 
   return (
     <main className="mx-auto max-w-6xl p-6">
@@ -41,27 +51,40 @@ export function DashboardContent() {
         </div>
       </header>
 
-      <section className="mb-6 rounded border p-4">
-        <h2 className="mb-2 text-lg font-semibold">Production Status</h2>
-        {isLoading && <p>Loading...</p>}
-        {error && <p className="text-red-600">Error: {error.message}</p>}
-        {data && data.items.length === 0 && (
-          <p className="text-gray-600">No clusters connected. Connect your first cluster to get started.</p>
-        )}
-        {data && data.items.length > 0 && (
-          <ul className="space-y-2">
-            {data.items.map((c) => {
-              const cluster = c as { id: string; name: string; displayName: string; status: string };
-              return (
-                <li key={cluster.id} className="flex items-center justify-between rounded border p-2">
-                  <span>{cluster.displayName} ({cluster.name})</span>
-                  <span className="text-sm">{cluster.status}</span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      <div className="mb-4">
+        <select
+          className="rounded border p-2"
+          value={activeId ?? ""}
+          onChange={(e) => setSelectedId(e.target.value || null)}
+          disabled={clusters.length === 0}
+        >
+          {clusters.length === 0 && <option value="">no clusters connected</option>}
+          {clusters.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.displayName}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {!activeId && (
+        <p className="rounded border border-dashed p-8 text-center text-gray-500">
+          Connect your first cluster to see health, incidents, and recent changes.
+        </p>
+      )}
+
+      {activeId && isLoading && <p className="text-gray-500">Loading dashboard…</p>}
+      {activeId && error && (
+        <p className="rounded border border-red-300 bg-red-50 p-4 text-red-700">
+          Error: {error.message}
+        </p>
+      )}
+      {activeId && data && (
+        <div className="space-y-4">
+          <HealthBanner health={data.health} stale={data.dataStale} />
+          <DashboardDetails data={data} />
+        </div>
+      )}
     </main>
   );
 }
