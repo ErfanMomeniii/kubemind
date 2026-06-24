@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     jwt_access_expire_minutes: int = Field(default=15, alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
     jwt_refresh_expire_days: int = Field(default=7, alias="JWT_REFRESH_TOKEN_EXPIRE_DAYS")
 
+    ai_default_model: str = Field(default="claude-sonnet-4-6", alias="AI_DEFAULT_MODEL")
+    ai_fallback_model: str = Field(default="claude-haiku-4-5-20251001", alias="AI_FALLBACK_MODEL")
+    ai_provider: str = Field(default="anthropic", alias="AI_PROVIDER")
+
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
 
