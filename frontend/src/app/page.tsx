@@ -1,10 +1,18 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth-store";
+import { DashboardContent } from "@/components/dashboard-content";
+
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold">KubeMind</h1>
-      <p className="mt-4 text-lg text-gray-600">
-        Kubernetes Intelligence for Humans
-      </p>
-    </main>
-  );
+  const user = useAuthStore((s) => s.user);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user) router.replace("/login");
+  }, [user, router]);
+
+  if (!user) return null;
+  return <DashboardContent />;
 }
