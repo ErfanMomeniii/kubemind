@@ -146,11 +146,19 @@ def _event_summary(e: Any) -> dict[str, Any]:
 
 
 def _deployment_summary(d: Any) -> dict[str, Any]:
+    containers = d.spec.template.spec.containers or []
+    image = containers[0].image if containers else None
+    env_vars: dict[str, str] = {}
+    for c in containers:
+        for e in (c.env or []):
+            if e.value is not None:
+                env_vars[e.name] = e.value
     return {
         "name": d.metadata.name,
         "namespace": d.metadata.namespace,
         "replicas_desired": d.spec.replicas,
         "replicas_ready": d.status.ready_replicas or 0,
-        "image": d.spec.template.spec.containers[0].image if d.spec.template.spec.containers else None,
+        "image": image,
         "available": d.status.available_replicas or 0,
+        "env_vars": env_vars,
     }

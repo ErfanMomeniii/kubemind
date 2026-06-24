@@ -1,0 +1,43 @@
+"""Architecture response schemas."""
+
+from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict
+
+
+class ServiceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    cluster_id: UUID
+    namespace: str
+    name: str
+    kind: str
+    criticality_score: float | None
+    synced_at: datetime
+
+
+class DependencyResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    cluster_id: UUID
+    from_service: str
+    to_service: str
+    to_kind: str
+    detected_via: str
+    synced_at: datetime
+
+
+class ArchitectureGraphResponse(BaseModel):
+    services: list[ServiceResponse]
+    dependencies: list[DependencyResponse]
+
+
+class BlastRadiusResponse(BaseModel):
+    service: str
+    direct_downstream: list[str]
+    total_downstream: list[str]
+    upstream: list[str]
+    affected_count: int
