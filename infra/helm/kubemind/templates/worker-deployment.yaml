@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubemind.fullname" . }}-worker
+  labels:
+    {{- include "kubemind.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubemind.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "kubemind.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      containers:
+        - name: worker
+          image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          command: ["rq", "worker", "--url", "{{ .Values.backend.env.redisUrl }}", "kubemind"]
+          env:
+            - name: APP_ENV
+              value: {{ .Values.env.appEnv | quote }}
+            - name: DATABASE_URL
+              value: {{ .Values.backend.env.databaseUrl | quote }}
+            - name: REDIS_URL
+              value: {{ .Values.backend.env.redisUrl | quote }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}

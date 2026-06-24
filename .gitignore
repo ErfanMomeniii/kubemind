@@ -216,3 +216,38 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# AI tooling + AI-generated content — local only, not committed
+CLAUDE.md
+.claude/
+AGENTS.md
+GEMINI.md
+.cursor/
+.cursorignore
+.cursorrules
+.aider*
+.continue/
+.windsurfrules
+.codeium/
+.github/copilot-instructions.md
+docs/
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# Build artifacts
+frontend/.next/
+frontend/out/
+dist/
+build/
+*.egg-info/
+
+# Env (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/

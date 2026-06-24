@@ -1,0 +1,85 @@
+nameOverride: ""
+fullnameOverride: ""
+
+imagePullSecrets: []
+
+backend:
+  image:
+    repository: kubemind/backend
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  env:
+    databaseUrl: postgresql+asyncpg://kubemind:kubemind@kubemind-postgres:5432/kubemind
+    redisUrl: redis://kubemind-redis:6379/0
+
+worker:
+  image:
+    repository: kubemind/backend
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+frontend:
+  image:
+    repository: kubemind/frontend
+    tag: "0.1.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+postgres:
+  enabled: true
+  image: postgres:16-alpine
+  persistence:
+    size: 20Gi
+    storageClass: ""
+  auth:
+    username: kubemind
+    password: change-me
+    database: kubemind
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+  persistence:
+    size: 5Gi
+    storageClass: ""
+
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  host: kubemind.local
+  tls:
+    enabled: false
+    secretName: kubemind-tls
+
+service:
+  type: ClusterIP
+  port: 8000
+
+env:
+  appEnv: production
+  logLevel: INFO
+  secretKey: change-me-use-openssl-rand-hex-32
