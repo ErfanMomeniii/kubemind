@@ -1,18 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/auth-store";
+import { useRequireAuth } from "@/lib/auth-guards";
 import { DashboardContent } from "@/components/dashboard-content";
 
 export default function Home() {
-  const user = useAuthStore((s) => s.user);
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!user) router.replace("/login");
-  }, [user, router]);
-
-  if (!user) return null;
+  const { ready } = useRequireAuth();
+  if (!ready) return null;
   return <DashboardContent />;
 }

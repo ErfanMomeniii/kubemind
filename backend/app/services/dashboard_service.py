@@ -252,10 +252,12 @@ def _parse_deployment_time(d: dict) -> datetime | None:
 
 
 def _prometheus_client(cluster: Cluster) -> PrometheusClient:
-    if not cluster.prometheus_url:
-        raise IntegrationError("cluster has no prometheus_url configured")
-    return PrometheusClient(cluster.prometheus_url)
+    from integrations.factory import make_prometheus_client
+
+    return make_prometheus_client(cluster)
 
 
 def _k8s_client(cluster: Cluster) -> KubernetesClient:
-    return KubernetesClient(cluster.server_url, context=cluster.context)
+    from integrations.factory import make_k8s_client
+
+    return make_k8s_client(cluster)

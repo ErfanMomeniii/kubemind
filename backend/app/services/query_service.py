@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import IntegrationError, LLMError, NotFound
 from app.core.logging import get_logger
 from app.models import Cluster, Investigation, Query
-from app.schemas.query import QueryRequest, QueryResponse
+from app.schemas.query import InvestigationResponse, QueryRequest, QueryResponse
 
 from ai.agent import AgentState, build_agent
 from ai.llm import LLM, get_llm
@@ -99,6 +99,21 @@ async def get_query(
     return QueryResponse.model_validate(query)
 
 
+async def get_investigation(
+    investigation_id: UUID, org_id: UUID, session: AsyncSession
+) -> InvestigationResponse:
+    from app.models import Investigation
+
+    inv = await session.scalar(
+        select(Investigation).where(
+            Investigation.id == investigation_id, Investigation.org_id == org_id
+        )
+    )
+    if inv is None:
+        raise NotFound("investigation not found", {"investigation_id": str(investigation_id)})
+    return InvestigationResponse.model_validate(inv)
+
+
 async def _run_agent(
     text: str, cluster_id: str, cluster: Cluster, llm: LLM | None
 ) -> dict:
@@ -113,10 +128,10 @@ async def _run_agent(
 
 
 def _build_tools(cluster: Cluster) -> ToolRegistry:
-    if not cluster.prometheus_url:
-        raise IntegrationError("cluster has no prometheus_url configured")
-    prom = PrometheusClient(cluster.prometheus_url)
-    k8s = KubernetesClient(cluster.server_url, context=cluster.context)
+    from integrations.factory import make_k8s_client, make_prometheus_client
+
+    prom = make_prometheus_client(cluster)
+    k8s = make_k8s_client(cluster)
     return ToolRegistry(prometheus=prom, k8s=k8s)
 
 

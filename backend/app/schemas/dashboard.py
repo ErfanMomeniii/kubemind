@@ -3,16 +3,19 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 
 class HealthSummary(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     status: Literal["Healthy", "Degraded", "Critical", "Unknown"]
     score: float
     availability: float | None
 
 
 class IncidentRef(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     id: str
     title: str
     severity: str
@@ -21,6 +24,7 @@ class IncidentRef(BaseModel):
 
 
 class DeploymentRef(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     service: str
     version: str | None
     namespace: str
@@ -29,6 +33,7 @@ class DeploymentRef(BaseModel):
 
 
 class ConfigChangeRef(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     kind: str
     name: str
     namespace: str
@@ -37,23 +42,27 @@ class ConfigChangeRef(BaseModel):
 
 
 class AnomalyRef(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     service: str
     type: str
     count: int
 
 
 class RecentChanges(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     deployments: list[DeploymentRef]
     config_changes: list[ConfigChangeRef]
     anomalies: list[AnomalyRef]
 
 
 class WarningRef(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     title: str
     service: str | None
 
 
 class RiskService(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     service: str
     score: float
     trend: Literal["rising", "stable", "falling", "unknown"]
@@ -61,6 +70,7 @@ class RiskService(BaseModel):
 
 
 class DashboardResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     cluster_id: str
     health: HealthSummary
     incidents: dict[str, list[IncidentRef]]

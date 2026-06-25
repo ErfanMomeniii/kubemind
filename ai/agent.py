@@ -127,11 +127,10 @@ def _evaluator_node(llm: LLM):
             return {"sufficient": True, "confidence": "low"}
         evidence_json = json.dumps(state.get("evidence", []), default=str)[:8000]
         messages = [
+            {"role": "system", "content": EVALUATOR_SYSTEM},
             {
-                "role": "system",
-                "content": EVALUATOR_SYSTEM.format(
-                    evidence_json=evidence_json, query=state["query"]
-                ),
+                "role": "user",
+                "content": f"Evidence:\n{evidence_json}\n\nQuestion: {state['query']}",
             },
         ]
         try:
@@ -159,16 +158,14 @@ def _responder_node(llm: LLM):
             }
         evidence_json = json.dumps(state.get("evidence", []), default=str)[:8000]
         messages = [
+            {"role": "system", "content": RESPONDER_SYSTEM},
             {
-                "role": "system",
-                "content": RESPONDER_SYSTEM.format(
-                    query=state["query"], evidence_json=evidence_json
-                ),
+                "role": "user",
+                "content": f"Question: {state['query']}\n\nEvidence:\n{evidence_json}",
             },
         ]
         try:
             raw = await llm.ainvoke(messages)
-            parsed = _parse_json(raw)
         except Exception as exc:
             return {
                 "answer": f"Responder failed: {exc}",
@@ -176,8 +173,10 @@ def _responder_node(llm: LLM):
                 "root_cause": None,
                 "proposed_action": None,
             }
+        parsed = _parse_json(raw)
+        answer = parsed.get("answer") or raw.strip()
         return {
-            "answer": parsed.get("answer", ""),
+            "answer": answer,
             "confidence": parsed.get("confidence", "low"),
             "root_cause": parsed.get("root_cause"),
             "proposed_action": parsed.get("proposed_action"),
@@ -187,14 +186,29 @@ def _responder_node(llm: LLM):
 
 
 def _parse_json(raw: str) -> dict[str, Any]:
-    """Parse JSON from LLM output, tolerating code fences + prose."""
+    """Parse JSON from LLM output, tolerating code fences, prose, single quotes."""
     text = raw.strip()
     if text.startswith("```"):
-        text = text.split("```", 2)[1] if "```" in text[3:] else text[3:]
-        if text.startswith("json"):
-            text = text[4:]
+        parts = text.split("```")
+        if len(parts) >= 2:
+            text = parts[1]
+            if text.startswith("json"):
+                text = text[4:]
+        else:
+            text = text[3:]
     start = text.find("{")
     end = text.rfind("}")
-    if start == -1 or end == -1:
+    if start == -1 or end == -1 or end < start:
         return {}
-    return json.loads(text[start : end + 1])
+    candidate = text[start : end + 1]
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError:
+        pass
+    # Fallback: single-quote dicts (some models emit Python-ish JSON)
+    try:
+        import ast
+
+        return ast.literal_eval(candidate)
+    except (ValueError, SyntaxError):
+        return {}

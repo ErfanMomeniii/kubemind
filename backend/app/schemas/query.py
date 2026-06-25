@@ -5,6 +5,7 @@ from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
 
 
 class QueryRequest(BaseModel):
@@ -13,7 +14,11 @@ class QueryRequest(BaseModel):
 
 
 class QueryResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     id: UUID
     cluster_id: UUID
@@ -27,7 +32,11 @@ class QueryResponse(BaseModel):
 
 
 class InvestigationResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     id: UUID
     query_id: UUID
@@ -43,6 +52,7 @@ class InvestigationResponse(BaseModel):
 
 
 class QueryListResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     items: list[QueryResponse]
     next_cursor: str | None = None
     has_more: bool = False

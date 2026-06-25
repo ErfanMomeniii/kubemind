@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        env_prefix="APP_",
         extra="ignore",
     )
 
@@ -27,6 +26,10 @@ class Settings(BaseSettings):
     ai_default_model: str = Field(default="claude-sonnet-4-6", alias="AI_DEFAULT_MODEL")
     ai_fallback_model: str = Field(default="claude-haiku-4-5-20251001", alias="AI_FALLBACK_MODEL")
     ai_provider: str = Field(default="anthropic", alias="AI_PROVIDER")
+    ai_base_url: str | None = Field(default=None, alias="AI_BASE_URL")
+    ai_model: str | None = Field(default=None, alias="AI_MODEL")
+    openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
+    anthropic_api_key: str | None = Field(default=None, alias="ANTHROPIC_API_KEY")
 
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 

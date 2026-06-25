@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { authHeaders } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import {
   configChangeListSchema,
   deploymentListSchema,
@@ -12,38 +12,34 @@ import {
 import { useAuthStore } from "@/stores/auth-store";
 
 async function fetchDeployments(clusterId: string): Promise<Deployment[]> {
-  const resp = await fetch(`/api/v1/clusters/${clusterId}/deployments`, {
-    headers: { ...authHeaders() },
-  });
+  const resp = await apiFetch(`/api/v1/clusters/${clusterId}/deployments`);
   if (!resp.ok) throw new Error(`deployments fetch failed: ${resp.status}`);
   return deploymentListSchema.parse(await resp.json()).items;
 }
 
 async function fetchConfigChanges(clusterId: string): Promise<ConfigChange[]> {
-  const resp = await fetch(`/api/v1/clusters/${clusterId}/config-changes`, {
-    headers: { ...authHeaders() },
-  });
+  const resp = await apiFetch(`/api/v1/clusters/${clusterId}/config-changes`);
   if (!resp.ok) throw new Error(`config changes fetch failed: ${resp.status}`);
   return configChangeListSchema.parse(await resp.json()).items;
 }
 
 export function DeploymentsPage() {
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const [clusterId, setClusterId] = useState("");
+  const clusterId = useAuthStore((s) => s.selectedClusterId);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const deployments = useQuery({
     queryKey: ["deployments", clusterId],
-    queryFn: () => fetchDeployments(clusterId),
+    queryFn: () => fetchDeployments(clusterId as string),
     enabled: !!clusterId,
+    retry: false,
   });
   const configChanges = useQuery({
     queryKey: ["config-changes", clusterId],
-    queryFn: () => fetchConfigChanges(clusterId),
+    queryFn: () => fetchConfigChanges(clusterId as string),
     enabled: !!clusterId,
+    retry: false,
   });
 
   async function sync() {
@@ -51,9 +47,8 @@ export function DeploymentsPage() {
     setSyncing(true);
     setSyncResult(null);
     try {
-      const resp = await fetch(`/api/v1/clusters/${clusterId}/sync`, {
+      const resp = await apiFetch(`/api/v1/clusters/${clusterId}/sync`, {
         method: "POST",
-        headers: { ...authHeaders() },
       });
       if (!resp.ok) throw new Error(`sync failed: ${resp.status}`);
       const data = await resp.json();
@@ -67,30 +62,10 @@ export function DeploymentsPage() {
     }
   }
 
-  if (!user) return null;
-
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <header className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Deployments</h1>
-        <button
-          className="rounded border p-2 text-sm"
-          onClick={() => {
-            logout();
-            window.location.href = "/login";
-          }}
-        >
-          Sign out
-        </button>
-      </header>
-
-      <div className="mb-4 flex gap-2">
-        <input
-          className="flex-1 rounded border p-2"
-          placeholder="Cluster ID"
-          value={clusterId}
-          onChange={(e) => setClusterId(e.target.value)}
-        />
         <button
           className="rounded bg-black p-2 text-white disabled:opacity-50"
           onClick={sync}
@@ -102,7 +77,7 @@ export function DeploymentsPage() {
 
       {syncResult && <p className="mb-4 text-sm text-gray-600">{syncResult}</p>}
 
-      {!clusterId && <p className="text-gray-500">Enter a cluster ID to view deployments.</p>}
+      {!clusterId && <p className="text-gray-500">Select a cluster on the Dashboard first.</p>}
 
       {clusterId && (
         <div className="grid grid-cols-2 gap-4">
@@ -115,7 +90,7 @@ export function DeploymentsPage() {
               <p className="text-sm text-red-600">{deployments.error.message}</p>
             )}
             {deployments.data && deployments.data.length === 0 && (
-              <p className="text-sm text-gray-500">none</p>
+              <p className="text-sm text-gray-500">none — click Sync now</p>
             )}
             {deployments.data && deployments.data.length > 0 && (
               <ul className="space-y-2 text-sm">

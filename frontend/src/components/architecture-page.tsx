@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { authHeaders } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import {
   architectureGraphSchema,
   blastRadiusSchema,
@@ -11,26 +11,21 @@ import {
 import { useAuthStore } from "@/stores/auth-store";
 
 async function fetchGraph(clusterId: string) {
-  const resp = await fetch(`/api/v1/clusters/${clusterId}/dependencies`, {
-    headers: { ...authHeaders() },
-  });
+  const resp = await apiFetch(`/api/v1/clusters/${clusterId}/dependencies`);
   if (!resp.ok) throw new Error(`graph fetch failed: ${resp.status}`);
   return architectureGraphSchema.parse(await resp.json());
 }
 
 async function fetchBlastRadius(clusterId: string, service: string): Promise<BlastRadius> {
-  const resp = await fetch(
+  const resp = await apiFetch(
     `/api/v1/clusters/${clusterId}/services/${encodeURIComponent(service)}/blast-radius`,
-    { headers: { ...authHeaders() } },
   );
   if (!resp.ok) throw new Error(`blast radius fetch failed: ${resp.status}`);
   return blastRadiusSchema.parse(await resp.json());
 }
 
 export function ArchitecturePage() {
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const [clusterId, setClusterId] = useState("");
+  const clusterId = useAuthStore((s) => s.selectedClusterId);
   const [selected, setSelected] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
@@ -38,14 +33,16 @@ export function ArchitecturePage() {
 
   const graph = useQuery({
     queryKey: ["architecture", clusterId],
-    queryFn: () => fetchGraph(clusterId),
+    queryFn: () => fetchGraph(clusterId as string),
     enabled: !!clusterId,
+    retry: false,
   });
 
   const blast = useQuery({
     queryKey: ["blast-radius", clusterId, selected],
-    queryFn: () => fetchBlastRadius(clusterId, selected as string),
+    queryFn: () => fetchBlastRadius(clusterId as string, selected as string),
     enabled: !!clusterId && !!selected,
+    retry: false,
   });
 
   async function sync() {
@@ -53,9 +50,8 @@ export function ArchitecturePage() {
     setSyncing(true);
     setSyncResult(null);
     try {
-      const resp = await fetch(`/api/v1/clusters/${clusterId}/architecture/sync`, {
+      const resp = await apiFetch(`/api/v1/clusters/${clusterId}/architecture/sync`, {
         method: "POST",
-        headers: { ...authHeaders() },
       });
       if (!resp.ok) throw new Error(`sync failed: ${resp.status}`);
       const data = await resp.json();
@@ -68,33 +64,13 @@ export function ArchitecturePage() {
     }
   }
 
-  if (!user) return null;
-
   const services = graph.data?.services ?? [];
   const deps = graph.data?.dependencies ?? [];
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <header className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Architecture</h1>
-        <button
-          className="rounded border p-2 text-sm"
-          onClick={() => {
-            logout();
-            window.location.href = "/login";
-          }}
-        >
-          Sign out
-        </button>
-      </header>
-
-      <div className="mb-4 flex gap-2">
-        <input
-          className="flex-1 rounded border p-2"
-          placeholder="Cluster ID"
-          value={clusterId}
-          onChange={(e) => setClusterId(e.target.value)}
-        />
         <button
           className="rounded bg-black p-2 text-white disabled:opacity-50"
           onClick={sync}
@@ -106,7 +82,7 @@ export function ArchitecturePage() {
 
       {syncResult && <p className="mb-4 text-sm text-gray-600">{syncResult}</p>}
 
-      {!clusterId && <p className="text-gray-500">Enter a cluster ID to discover architecture.</p>}
+      {!clusterId && <p className="text-gray-500">Select a cluster on the Dashboard first.</p>}
 
       {clusterId && (
         <div className="grid grid-cols-2 gap-4">
@@ -116,14 +92,11 @@ export function ArchitecturePage() {
             </h2>
             {graph.isLoading && <p className="text-sm text-gray-500">Loading…</p>}
             {graph.error && <p className="text-sm text-red-600">{graph.error.message}</p>}
-            {services.length === 0 && <p className="text-sm text-gray-500">none</p>}
+            {services.length === 0 && <p className="text-sm text-gray-500">none — click Discover</p>}
             <ul className="space-y-1 text-sm">
               {services.map((s) => (
                 <li key={s.id}>
-                  <button
-                    className="text-left hover:underline"
-                    onClick={() => setSelected(s.name)}
-                  >
+                  <button className="text-left hover:underline" onClick={() => setSelected(s.name)}>
                     {s.namespace}/{s.name}
                   </button>
                 </li>

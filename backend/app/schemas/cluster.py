@@ -4,11 +4,10 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic.alias_generators import to_camel
 
 
 class ClusterCredential(BaseModel):
-    """Cluster credential. Token stored in Vault/k8s Secret, not DB."""
-
     type: str = Field(description="service_account_token | kubeconfig | oidc")
     token: str = Field(description="credential value, stored in secret manager")
     namespace: str = Field(default="kubemind")
@@ -30,7 +29,11 @@ class ClusterUpdate(BaseModel):
 
 
 class ClusterResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     id: UUID
     org_id: UUID
@@ -45,6 +48,8 @@ class ClusterResponse(BaseModel):
 
 
 class ClusterListResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     items: list[ClusterResponse]
     next_cursor: str | None = None
     has_more: bool = False

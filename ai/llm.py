@@ -25,7 +25,7 @@ class AnthropicLLM:
     def __init__(self, model: str | None = None) -> None:
         from langchain_anthropic import ChatAnthropic
 
-        api_key = _read_env("ANTHROPIC_API_KEY")
+        api_key = settings.anthropic_api_key or _read_env("ANTHROPIC_API_KEY")
         self._model = ChatAnthropic(
             model=model or settings.ai_default_model,
             api_key=api_key,
@@ -54,19 +54,23 @@ class AnthropicLLM:
 
 
 class OpenAILLM:
-    """OpenAI-backed LLM via langchain-openai."""
+    """OpenAI-backed LLM via langchain-openai. Supports OpenAI-compatible gateways."""
 
     def __init__(self, model: str | None = None) -> None:
         from langchain_openai import ChatOpenAI
 
-        api_key = _read_env("OPENAI_API_KEY")
-        self._model = ChatOpenAI(
-            model=model or "gpt-4o-mini",
-            api_key=api_key,
-            temperature=0,
-            max_tokens=4096,
-        )
-        self._name = model or "gpt-4o-mini"
+        api_key = settings.openai_api_key or _read_env("OPENAI_API_KEY")
+        resolved_model = model or settings.ai_model or "gpt-4o-mini"
+        kwargs: dict[str, Any] = {
+            "model": resolved_model,
+            "api_key": api_key,
+            "temperature": 0,
+            "max_tokens": 4096,
+        }
+        if settings.ai_base_url:
+            kwargs["base_url"] = settings.ai_base_url
+        self._model = ChatOpenAI(**kwargs)
+        self._name = resolved_model
 
     async def ainvoke(self, messages: list[dict[str, str]]) -> str:
         from langchain_core.messages import HumanMessage, SystemMessage
@@ -88,8 +92,18 @@ class OpenAILLM:
 
 
 def get_llm(provider: str | None = None) -> LLM:
-    """Build LLM from config. provider: anthropic | openai."""
-    provider = provider or "anthropic"
+    """Build LLM from config. provider: anthropic | openai.
+
+    Auto-detects: if AI_PROVIDER unset and ANTHROPIC_API_KEY missing but
+    OPENAI_API_KEY present, defaults to openai (supports OpenAI-compatible gateways).
+    """
+    import os
+
+    if provider is None:
+        provider = settings.ai_provider
+        if provider == "anthropic" and not (settings.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY")):
+            if settings.openai_api_key or os.environ.get("OPENAI_API_KEY"):
+                provider = "openai"
     if provider == "anthropic":
         return AnthropicLLM()
     if provider == "openai":

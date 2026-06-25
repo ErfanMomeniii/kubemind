@@ -4,6 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic.alias_generators import to_camel
 
 
 class UserCreate(BaseModel):
@@ -23,14 +24,20 @@ class RefreshRequest(BaseModel):
 
 
 class TokenResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    expires_in: int  # seconds
+    expires_in: int
 
 
 class UserResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     id: UUID
     email: EmailStr
@@ -40,5 +47,7 @@ class UserResponse(BaseModel):
 
 
 class AuthResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     user: UserResponse
     tokens: TokenResponse

@@ -4,10 +4,15 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 
 class ServiceResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     id: UUID
     cluster_id: UUID
@@ -19,7 +24,11 @@ class ServiceResponse(BaseModel):
 
 
 class DependencyResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     id: UUID
     cluster_id: UUID
@@ -31,11 +40,13 @@ class DependencyResponse(BaseModel):
 
 
 class ArchitectureGraphResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     services: list[ServiceResponse]
     dependencies: list[DependencyResponse]
 
 
 class BlastRadiusResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     service: str
     direct_downstream: list[str]
     total_downstream: list[str]

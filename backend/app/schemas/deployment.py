@@ -4,10 +4,15 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
+from pydantic.alias_generators import to_camel
 
 
 class DeploymentResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     id: UUID
     cluster_id: UUID
@@ -25,13 +30,18 @@ class DeploymentResponse(BaseModel):
 
 
 class DeploymentListResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     items: list[DeploymentResponse]
     next_cursor: str | None = None
     has_more: bool = False
 
 
 class ConfigChangeResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        alias_generator=to_camel,
+        populate_by_name=True,
+    )
 
     id: UUID
     cluster_id: UUID
@@ -45,6 +55,7 @@ class ConfigChangeResponse(BaseModel):
 
 
 class ConfigChangeListResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     items: list[ConfigChangeResponse]
     next_cursor: str | None = None
     has_more: bool = False

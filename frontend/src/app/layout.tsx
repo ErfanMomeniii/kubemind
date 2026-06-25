@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Nav } from "@/components/nav";
 
 export const metadata: Metadata = {
   title: "KubeMind",
@@ -15,7 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <Providers>{children}</body>
+        <Providers>
+          <Nav />
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }

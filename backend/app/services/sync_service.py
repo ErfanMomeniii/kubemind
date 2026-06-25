@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import IntegrationError
 from app.core.logging import get_logger
 from app.models import Cluster, ConfigChange, Deployment
+from integrations.factory import make_k8s_client
 from integrations.k8s import KubernetesClient
 
 log = get_logger()
@@ -22,7 +23,7 @@ async def sync_cluster(
     cluster: Cluster, session: AsyncSession
 ) -> dict[str, int]:
     """Sync deployments + config changes. Returns counts of new records."""
-    k8s = KubernetesClient(cluster.server_url, context=cluster.context)
+    k8s = make_k8s_client(cluster)
     now = datetime.now(timezone.utc)
 
     deployments_added = await _sync_deployments(cluster, k8s, session, now)

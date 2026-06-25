@@ -5,7 +5,12 @@ from uuid import UUID
 from fastapi import APIRouter, Query
 
 from app.api.auth_deps import CurrentUser, DbSession
-from app.schemas.query import QueryListResponse, QueryRequest, QueryResponse
+from app.schemas.query import (
+    InvestigationResponse,
+    QueryListResponse,
+    QueryRequest,
+    QueryResponse,
+)
 from app.services import query_service
 
 router = APIRouter(prefix="/query", tags=["query"])
@@ -88,3 +93,14 @@ async def get_query(
 
         raise PermissionDenied("user has no organization")
     return await query_service.get_query(query_id, user.org_id, session)
+
+
+@router.get("/investigations/{investigation_id}", response_model=InvestigationResponse)
+async def get_investigation(
+    investigation_id: UUID, user: CurrentUser, session: DbSession
+) -> InvestigationResponse:
+    if user.org_id is None:
+        from app.core.exceptions import PermissionDenied
+
+        raise PermissionDenied("user has no organization")
+    return await query_service.get_investigation(investigation_id, user.org_id, session)

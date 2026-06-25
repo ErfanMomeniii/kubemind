@@ -8,10 +8,10 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.session import Base
-from app.models.mixins import Timestamps, UUIDPk
+from app.models.mixins import SoftDelete, Timestamps, UUIDPk
 
 
-class Cluster(UUIDPk, Timestamps, Base):
+class Cluster(UUIDPk, Timestamps, SoftDelete, Base):
     __tablename__ = "clusters"
 
     org_id: Mapped[uuid.UUID] = mapped_column(
